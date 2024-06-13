@@ -3,5 +3,5 @@
 	url = https://github.com/tud-zih-energy/nitro.git
 [submodule "lib/FIRESTARTER"]
 	path = lib/FIRESTARTER
-	url = https://github.com/tud-zih-energy/FIRESTARTER.git
-	branch = roco2
+	url = https://github.com/oeffland/FIRESTARTER.git
+	branch = fix_build
