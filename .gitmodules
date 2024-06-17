@@ -1,7 +1,3 @@
 [submodule "lib/nitro"]
 	path = lib/nitro
 	url = https://github.com/tud-zih-energy/nitro.git
-[submodule "lib/FIRESTARTER"]
-	path = lib/FIRESTARTER
-	url = https://github.com/tud-zih-energy/FIRESTARTER.git
-	branch = roco2
