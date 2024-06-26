@@ -38,18 +38,18 @@ using namespace roco2::experiments::patterns;
 
 void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 {
-    roco2::kernels::busy_wait bw;
+//    roco2::kernels::busy_wait bw;
     roco2::kernels::compute cp;
-    roco2::kernels::sinus sinus;
+//    roco2::kernels::sinus sinus;
     roco2::kernels::memory_read<> mem_rd;
     roco2::kernels::memory_copy<> mem_cpy;
     roco2::kernels::memory_write<> mem_wrt;
-    roco2::kernels::sqrt squareroot;
-    roco2::kernels::matmul mm;
+//    roco2::kernels::sqrt squareroot;
+//    roco2::kernels::matmul mm;
     roco2::kernels::firestarter fs;
     roco2::kernels::idle idle;
-    roco2::kernels::mulpd mulpd;
-    roco2::kernels::addpd addpd;
+//    roco2::kernels::mulpd mulpd;
+//    roco2::kernels::addpd addpd;
 
     roco2::cpu::frequency freqctl;
 
@@ -57,7 +57,8 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 
     // ------ EDIT GENERIC SETTINGS BELOW THIS LINE ------
 
-    auto experiment_duration = std::chrono::milliseconds(10000);
+//auto experiment_duration = std::chrono::milliseconds(10000);
+    auto experiment_duration = std::chrono::milliseconds(100);
 
     auto freq_list = std::vector<unsigned>{ 3001, 3000, 2100, 1200 };
    // auto freq_list = std::vector<unsigned>{ 3001 };
@@ -93,7 +94,7 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 
     setting([&freqctl, &freq_list]() { freqctl.change(freq_list[0]); });
     // do one full idle
-    experiment(idle, roco2::experiments::cpu_sets::all_cpus());
+//    experiment(idle, roco2::experiments::cpu_sets::all_cpus());
 
     // for each frequency
     for (const auto& freq : freq_list)
@@ -102,16 +103,16 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 
         for (const auto& on : on_list)
         {
-                experiment(bw, on);
+//                experiment(bw, on);
                 experiment(cp, on);
-                experiment(sinus, on);
+//                experiment(sinus, on);
                 experiment(mem_rd, on);
                 experiment(mem_cpy, on);
                 experiment(mem_wrt, on);
-                experiment(addpd, on);
-                experiment(mulpd, on);
-                experiment(squareroot, on);
-                experiment(mm, on);
+//		experiment(addpd, on);
+//                experiment(mulpd, on);
+//                experiment(squareroot, on);
+//                experiment(mm, on);
                 experiment(fs, on);
         }
     }
