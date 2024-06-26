@@ -77,13 +77,14 @@
         "threads": "roco2:metrics::threads",
         "frequency": "roco2:metrics::frequency",
         "ddcm": "",
-        "cstate": "",
+        "cstate": "roco2:metrics::shell",
         "utility": ""
       },
       "channels": [
         "elab.ariel.power",
-	"elab.ariel.s1.dram.power.100Hz",
-	"Intel RAPL DRAM[1]"
+        "INTEL RAPL PCKG",
+        "elab.ariel.s0.dram.power",
+	"elab.ariel.s1.dram.power"
       ]
     },
     "comm_matrix": {
