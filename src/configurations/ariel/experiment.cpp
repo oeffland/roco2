@@ -94,7 +94,7 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 
     setting([&freqctl, &freq_list]() { freqctl.change(freq_list[0]); });
     // do one full idle
-//    experiment(idle, roco2::experiments::cpu_sets::all_cpus());
+    experiment(idle, roco2::experiments::cpu_sets::all_cpus());
 
     // for each frequency
     for (const auto& freq : freq_list)
