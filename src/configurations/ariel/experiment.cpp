@@ -57,16 +57,25 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 
     // ------ EDIT GENERIC SETTINGS BELOW THIS LINE ------
 
-//auto experiment_duration = std::chrono::milliseconds(10000);
-    auto experiment_duration = std::chrono::milliseconds(100);
+auto experiment_duration = std::chrono::milliseconds(100);
+//   auto experiment_duration = std::chrono::milliseconds(1000);
+//    auto experiment_duration = std::chrono::seconds(1);
 
     auto freq_list = std::vector<unsigned>{ 3001, 3000, 2100, 1200 };
    // auto freq_list = std::vector<unsigned>{ 3001 };
 
-    auto on_list = sub_block_pattern(2, 18)
+    //not used
+    auto ddcm_list = std::vector<unsigned>{ 1, 5, 10, 15, 16 };
+
+//fails    
+  auto on_list = sub_block_pattern(2, 18)
                    >> block_pattern(2, false, triangle_shape::upper)
-                   >> stride_pattern(2, 18)
-                   ;
+                   >> stride_pattern(2, 18);
+
+//works mostly
+//    auto on_list = sub_block_pattern(4, 12) 
+//                   >> block_pattern(4, false, triangle_shape::upper) 
+//                   >> stride_pattern(4, 12);
 
     // ------ EDIT GENERIC SETTINGS ABOVE THIS LINE ------
 
@@ -80,7 +89,13 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 #pragma omp barrier
 
     auto experiment_startpoint =
-        roco2::initialize::thread(starting_point, experiment_duration, eta_only);
+        roco2::initialize::thread(starting_point + std::chrono::seconds(10), experiment_duration, eta_only);
+//        roco2::initialize::thread(starting_point, experiment_duration, eta_only);
+
+//DEBUG experiment_startpoint
+//    roco2::log::info() << "experiment_startpoint: " << experiment_startpoint.starting_point;
+//DEBUG
+//    roco2::experiments::const_lenght exp(experiment_startpoint + std::chrono::seconds(10), experiment_duration);
 
     roco2::experiments::const_lenght exp(experiment_startpoint, experiment_duration);
 
