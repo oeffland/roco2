@@ -57,9 +57,9 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 
     // ------ EDIT GENERIC SETTINGS BELOW THIS LINE ------
 
-auto experiment_duration = std::chrono::milliseconds(100);
+//auto experiment_duration = std::chrono::milliseconds(100);
 //   auto experiment_duration = std::chrono::milliseconds(1000);
-//    auto experiment_duration = std::chrono::seconds(1);
+    auto experiment_duration = std::chrono::seconds(1);
 
     auto freq_list = std::vector<unsigned>{ 3001, 3000, 2100, 1200 };
    // auto freq_list = std::vector<unsigned>{ 3001 };
@@ -72,7 +72,7 @@ auto experiment_duration = std::chrono::milliseconds(100);
                    >> block_pattern(2, false, triangle_shape::upper)
                    >> stride_pattern(2, 18);
 
-//works mostly
+//works mostly with experiment duration >1s
 //    auto on_list = sub_block_pattern(4, 12) 
 //                   >> block_pattern(4, false, triangle_shape::upper) 
 //                   >> stride_pattern(4, 12);
