@@ -2,7 +2,7 @@ set(roco2_core_SOURCES)
 list(APPEND roco2_core_SOURCES
     metrics.cpp
     cpu.cpp
-    fastcpufreq.c
+#    fastcpufreq.c
     c_state_limit.c
     )
 

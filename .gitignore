@@ -1,2 +1,4 @@
 build*
 python
+CMakeCache.txt
+CMakeFiles/

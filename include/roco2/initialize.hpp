@@ -74,8 +74,8 @@ public:
         log::debug() << "Checking affinity of thread to correct cpu";
         if (cpu::info::current_cpu() != cpu::info::current_thread())
         {
-            raise("Thread ", cpu::info::current_thread(),
-                  " is on wrong cpu: ", cpu::info::current_cpu());
+		log::warn() << "Thread " << cpu::info::current_thread() <<
+                  " is on wrong cpu: " << cpu::info::current_cpu();
         }
 
         thread_local_memory();

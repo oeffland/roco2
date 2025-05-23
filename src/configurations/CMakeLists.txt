@@ -1,4 +1,5 @@
 add_subdirectory(ariel)
+add_subdirectory(capella)
 add_subdirectory(charon)
 add_subdirectory(charon_turbo)
 add_subdirectory(example)
