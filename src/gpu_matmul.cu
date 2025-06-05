@@ -20,9 +20,10 @@
 
 #include <chrono>
 
-#define ROW_TILE_WIDTH 32
-#define COL_TILE_WIDTH 32
+//#define ROW_TILE_WIDTH 32
+//#define COL_TILE_WIDTH 32
 
+//N = matrix_size
 __global__ void matrixMulNaive(const double* A, const double* B, double* C, int N) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -59,8 +60,10 @@ void runDevSync(){
 }
 
 // Allocate device memory
-void allocGPUMemory(double* d_Mem, size_t bytes){
-    checkCudaError(cudaMalloc(&d_Mem, bytes), "Allocating d_Mem");
+//void allocGPUMemory(double** d_Mem, size_t bytes){
+void allocGPUMemory(double*& d_Mem, size_t bytes){
+	//checkCudaError(cudaMalloc(&d_Mem, bytes), "Allocating d_Mem");
+    checkCudaError(cudaMallocManaged(&d_Mem, bytes), "Allocating d_Mem");
 }
 
 // Copy data to device

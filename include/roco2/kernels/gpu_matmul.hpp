@@ -10,7 +10,7 @@
 #include <cuda_runtime.h>
 //__global__ void matrixMulNaive(const float* A, const float* B, float* C, int N);
 
-void allocGPUMemory(double* d_Mem, size_t bytes);
+void allocGPUMemory(double*& d_Mem, size_t bytes);
 void copyDataToGPU(double* d_Mem, double* h_Mem, size_t bytes);
 void copyDataToHost(double* h_Mem, double* d_Mem, size_t bytes);
 void initDimensions(int block_size, int matrix_size);
@@ -56,7 +56,7 @@ namespace kernels
             uint64_t m = roco2::thread_local_memory().mat_size;
 */
     std::cerr << "trying to setup vars" << std::endl;
-    const int N = 4096; // Matrix size
+    const int N = 64; // Matrix size
     const int block_size = 32; // Block size
     size_t bytes = N * N * sizeof(double);
 
@@ -89,6 +89,7 @@ namespace kernels
     float *h_B = new float[N * N];
     float *h_C = new float[N * N];
 */
+/*
         std::cerr << "trying to init matrices" << std::endl;
     // Initialize matrices
 //    for (int i = 0; i < N * N; ++i) {
@@ -100,49 +101,76 @@ namespace kernels
         //h_B[i] = static_cast<double>(3);
     }
         std::cerr << "init matrices" << std::endl;
-
+*/
 
     // Allocate device memory
 //    double *d_A, *d_B, *d_C;
-	
+/*	
         std::cerr << "alloc d_A" << std::endl;
     double* d_A = roco2::thread_local_memory().mat_A.data();
         std::cerr << "alloc d_B" << std::endl;
     double* d_B = roco2::thread_local_memory().mat_B.data();
         std::cerr << "alloc d_C" << std::endl;
     double* d_C = roco2::thread_local_memory().mat_C.data();
-
+*/
 //    uint64_t m = roco2::thread_local_memory().mat_size;
 
 
 
-/*    double *d_A, *d_B, *d_C;
+    double *d_A, *d_B, *d_C;
+    int matrix_size = N * N * sizeof(double);
+
+
+  std::cerr << "alloc Device Memory" << std::endl;
+
         std::cerr << "before d_A" << std::endl;
-    allocGPUMemory(d_A, m_bytes);
+    allocGPUMemory(d_A, matrix_size);
         std::cerr << "d_A" << std::endl;
-    allocGPUMemory(d_B, m_bytes);
+    allocGPUMemory(d_B, matrix_size);
         std::cerr << "d_B" << std::endl;
-    allocGPUMemory(d_C, m_bytes);
+    allocGPUMemory(d_C, matrix_size);
         std::cerr << "d_C" << std::endl;
-*/
+
+  std::cerr << "synchronizing device" << std::endl;
+ runDevSync();
+
+  std::cerr << "trying to init matrices with size:" << matrix_size << std::endl;
+    // Initialize memory
+  for( int row = 0; row < N; ++row )
+    for( int col = 0; col < N; ++col )
+    {
+//      std::cerr << "init mem: " << row*N+col << " with: " << row << " " <<col+2 << std::endl;
+      d_A[row*N + col] = row;
+//      std::cerr << "a" << std::endl;
+      d_B[row*N + col] = col+2;
+//      std::cerr << "b" << std::endl;
+      d_C[row*N + col] = 0;
+//      std::cerr << "c" << std::endl;
+      
+    }
+  std::cerr << "matrices initialized" << std::endl;
+
+
 /*    checkCudaError(cudaMalloc(&d_A, bytes), "Allocating d_A");
     checkCudaError(cudaMalloc(&d_B, bytes), "Allocating d_B");
     checkCudaError(cudaMalloc(&d_C, bytes), "Allocating d_C");
 */
 
-    std::cerr << "before_copy h_A" << std::endl;
+/*
     // Copy data to device
+    std::cerr << "before_copy h_A" << std::endl;
    copyDataToGPU(d_A, h_A, m_bytes);
     std::cerr << "h_A copied" << std::endl;
    copyDataToGPU(d_B, h_B, m_bytes);
     std::cerr << "h_B copied" << std::endl;
+*/
 /*    checkCudaError(cudaMemcpy(d_A, h_A, bytes, cudaMemcpyHostToDevice), "Copying h_A to d_A");
     checkCudaError(cudaMemcpy(d_B, h_B, bytes, cudaMemcpyHostToDevice), "Copying h_B to d_B");
 */
     // Launch parameters
 //	initDimensions(32, N);
     std::cerr << "setting up dims with m="<< m << std::endl;
-    dim3 blockDim(16, 16); // 1024 threads per block for 32,32 
+    dim3 blockDim(32, 32); // 1024 threads per block for 32,32 
     dim3 gridDim((m + blockDim.x - 1) / blockDim.x,
                  (m + blockDim.y - 1) / blockDim.y);
 /*    dim3 gridDim((N + blockDim.x - 1) / blockDim.x,
@@ -175,7 +203,7 @@ namespace kernels
 
 //    std::cerr << "run GPU Matrix" << std::endl;
 		//runGPUMatrix(d_A, d_B, d_C, m, blockDim, gridDim);
-		runGPUMatrix(d_A, d_B, d_C, m, 1, 1);
+		runGPUMatrix(d_A, d_B, d_C, N, 1, 1);
 //    std::cerr << "GPU Matrix successfully run. Loop counter:" << loops << std::endl;
                 loops++;
             } while (std::chrono::high_resolution_clock::now() < until);
