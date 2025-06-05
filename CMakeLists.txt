@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.11)
-project(roco2)
+#cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.16)
+project(roco2 LANGUAGES C CXX CUDA)
 
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
@@ -91,6 +92,14 @@ target_compile_definitions(roco2 INTERFACE REGONLY)
 add_subdirectory(lib/nitro)
 target_link_libraries(roco2 INTERFACE Nitro::log)
 
+
+# CUDA injection
+find_package(CUDAToolkit REQUIRED)
+enable_language(CUDA)
+
+#add_library(roco src/foo.cpp) ?
+
+
 macro(Roco2Configuration CONF )
     add_executable(roco2_${CONF} experiment.cpp)
 
@@ -104,3 +113,13 @@ macro(Roco2Configuration CONF )
 endmacro()
 
 add_subdirectory(src)
+
+target_sources(roco2_core PRIVATE src/gpu_matmul.cu)
+
+set_target_properties(roco2_core PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(roco2_core PROPERTIES CUDA_ARCHITECTURES "90") 	# for Capella Hopper (H100)
+
+target_link_libraries(roco2_core INTERFACE CUDA::cudart)
+#set_source_files_properties(include/roco2/kernels/gpu_matmul.cu PROPERTIES LANGUAGE CUDA)
+
+
