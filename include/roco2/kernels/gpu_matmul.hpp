@@ -8,15 +8,18 @@
 #include <chrono>
 
 #include <cuda_runtime.h>
+//#include <sched.h>
 //__global__ void matrixMulNaive(const float* A, const float* B, float* C, int N);
 
 void allocGPUMemory(double*& d_Mem, size_t bytes);
 void copyDataToGPU(double* d_Mem, double* h_Mem, size_t bytes);
 void copyDataToHost(double* h_Mem, double* d_Mem, size_t bytes);
 void initDimensions(int block_size, int matrix_size);
-void cleanGPUMemory(double* d_Mem);
+void cleanGPUMemory(double*& d_Mem);
 void runGPUMatrix(const double* d_A, const double* d_B, double* d_C, int N, dim3 gridDim, dim3 blockDim);
 void runDevSync();
+void setGPUDevices(int device_id);
+void allocAllGPUs();
 //void runGPUMatrix(const float* d_A, const float* d_B, float* d_C, int N, int block_size);
 
 
@@ -45,6 +48,7 @@ namespace kernels
 
         virtual void run_kernel(chrono::time_point until) override
         {
+
 #ifdef HAS_SCOREP
             SCOREP_USER_REGION("gpu_matmul_kernel", SCOREP_USER_REGION_TYPE_FUNCTION)
 #endif
@@ -55,33 +59,34 @@ namespace kernels
 
             uint64_t m = roco2::thread_local_memory().mat_size;
 */
-    std::cerr << "trying to setup vars" << std::endl;
+//    std::cerr << "trying to setup vars" << std::endl;
     const int N = 64; // Matrix size
     const int block_size = 32; // Block size
     size_t bytes = N * N * sizeof(double);
 
-        std::cerr << "vars setup" << std::endl;
+/*
+//        std::cerr << "vars setup" << std::endl;
  
 	auto& mem = roco2::thread_local_memory();
 	mem.mat_A.resize(N * N);
 
-        std::cerr << "alloc h_A" << std::endl;
+//        std::cerr << "alloc h_A" << std::endl;
 //	    double* h_A = roco2::thread_local_memory().mat_A.data();
 	    double* h_A = mem.mat_A.data();
-        std::cerr << "alloc h_B" << std::endl;
+//        std::cerr << "alloc h_B" << std::endl;
 //            double* h_B = roco2::thread_local_memory().mat_B.data();
             double* h_B = mem.mat_B.data();
-        std::cerr << "alloc h_C" << std::endl;
+//        std::cerr << "alloc h_C" << std::endl;
 //            double* h_C = roco2::thread_local_memory().mat_C.data();
             double* h_C = mem.mat_C.data();
 
-        std::cerr << "alloc m" << std::endl;
+//        std::cerr << "alloc m" << std::endl;
             uint64_t m = roco2::thread_local_memory().mat_size;
 
         std::cerr << "allocated h_mems m=" << m << std::endl;
 
     size_t m_bytes = m * sizeof(double);
-
+*/
             std::size_t loops = 0;
 
    // Allocate host memory
@@ -115,41 +120,49 @@ namespace kernels
 */
 //    uint64_t m = roco2::thread_local_memory().mat_size;
 
+	
+//  std::cerr << "alloc Device Memory" << std::endl;
+  int cpu_id = omp_get_thread_num();
+//  int device_id = cpu_id % 4;
+  int device_id = 1;
+//  setGPUDevices(cpu_id % 4);
+setGPUDevices(device_id);
 
 
     double *d_A, *d_B, *d_C;
     int matrix_size = N * N * sizeof(double);
 
-
+//#pragma omp master
+//{
   std::cerr << "alloc Device Memory" << std::endl;
-
-        std::cerr << "before d_A" << std::endl;
+//for(int i=0; i<4;i++){
+//  setGPUDevices(i);
     allocGPUMemory(d_A, matrix_size);
-        std::cerr << "d_A" << std::endl;
     allocGPUMemory(d_B, matrix_size);
-        std::cerr << "d_B" << std::endl;
     allocGPUMemory(d_C, matrix_size);
-        std::cerr << "d_C" << std::endl;
 
   std::cerr << "synchronizing device" << std::endl;
- runDevSync();
+//  runDevSync();
+
 
   std::cerr << "trying to init matrices with size:" << matrix_size << std::endl;
     // Initialize memory
   for( int row = 0; row < N; ++row )
     for( int col = 0; col < N; ++col )
     {
-//      std::cerr << "init mem: " << row*N+col << " with: " << row << " " <<col+2 << std::endl;
       d_A[row*N + col] = row;
-//      std::cerr << "a" << std::endl;
       d_B[row*N + col] = col+2;
-//      std::cerr << "b" << std::endl;
       d_C[row*N + col] = 0;
-//      std::cerr << "c" << std::endl;
       
     }
+//}
+runDevSync();
+//#pragma omp barrier
   std::cerr << "matrices initialized" << std::endl;
-
+  
+//  setGPUDevices(cpu_id % 4);
+//}
+//#pragma omp barrier
 
 /*    checkCudaError(cudaMalloc(&d_A, bytes), "Allocating d_A");
     checkCudaError(cudaMalloc(&d_B, bytes), "Allocating d_B");
@@ -169,18 +182,21 @@ namespace kernels
 */
     // Launch parameters
 //	initDimensions(32, N);
-    std::cerr << "setting up dims with m="<< m << std::endl;
+
+/*  std::cerr << "setting up dims with m="<< m << std::endl;
     dim3 blockDim(32, 32); // 1024 threads per block for 32,32 
     dim3 gridDim((m + blockDim.x - 1) / blockDim.x,
                  (m + blockDim.y - 1) / blockDim.y);
-/*    dim3 gridDim((N + blockDim.x - 1) / blockDim.x,
-                 (N + blockDim.y - 1) / blockDim.y);
-*/
+
+  //    dim3 gridDim((N + blockDim.x - 1) / blockDim.x,
+  //               (N + blockDim.y - 1) / blockDim.y);
+
 
     std::cerr << "dims setup" << std::endl;
-
+*/
     std::cerr << "run GPU Matrix" << std::endl;
-            do
+
+    do
             {
 		//cudaDeviceSynchronize();
 
@@ -208,30 +224,33 @@ namespace kernels
                 loops++;
             } while (std::chrono::high_resolution_clock::now() < until);
 
-    std::cerr << "GPU Matrix successfully run. Loop counter:" << loops << std::endl;
-//	    runDevSync();
+	    runDevSync();
 //    std::cerr << "Device Synchronized" << loops << std::endl;
 
 	    roco2::metrics::utility::instance().write(loops);
 
+std::cerr << "GPU Matrix successfully run. Loop counter:" << loops << std::endl;
     	    // Copy result back
+/*
     std::cerr << "d_C before copy" << std::endl;
 	    copyDataToHost(h_C, d_C, m_bytes);
     std::cerr << "d_C copied to host" << std::endl;
+*/
 //    	    checkCudaError(cudaMemcpy(h_C, d_C, bytes, cudaMemcpyDeviceToHost), "Copying d_C to h_C");
 
 //    std::cerr << "DEBUG: no clean" << std::endl;
 
-    /*
+
+    // Cleanup
+//#pragma omp single
+//{
     std::cerr << " cleaning up d_A" << std::endl;
-	    // Cleanup
 	    cleanGPUMemory(d_A);
     std::cerr << " cleaning up d_B" << std::endl;
 	    cleanGPUMemory(d_B);
     std::cerr << " cleaning up d_C" << std::endl;
 	    cleanGPUMemory(d_C);
-
-*/
+//}
 /*    	    cudaFree(d_A);
             cudaFree(d_B);
             cudaFree(d_C);
