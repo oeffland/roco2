@@ -24,12 +24,12 @@
 //#define COL_TILE_WIDTH 32
 
 //N = matrix_size
-__global__ void matrixMulNaive(const double* A, const double* B, double* C, int N) {
+__global__ void matrixMulNaive(const float* A, const float* B, float* C, int N) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (row < N && col < N) {
-        double sum = 0.0f;
+        float sum = 0.0f;
         for (int k = 0; k < N; ++k) {
             sum += A[row * N + k] * B[k * N + col];
         }
@@ -44,18 +44,19 @@ void checkCudaError(cudaError_t err, const char* msg) {
     }
 }
 
-void runGPUMatrix(const double* d_A, const double* d_B, double* d_C, int N, dim3 gridDim, dim3 blockDim) {
-	
-//        std::cerr << "calling matrixMulNaive" << " N:" << N << std::endl;
-	matrixMulNaive<<<gridDim, blockDim>>>(d_A, d_B, d_C, N);
-//        std::cerr << "matrixMulNaive successfully run" << std::endl;
-       	checkCudaError(cudaGetLastError(), "Kernel launch");
+void runGPUMatrix(const float* d_A, const float* d_B, float* d_C, int N, dim3 gridDim, dim3 blockDim) {
+	//for (int i = 0; i < 100; i++){
+		matrixMulNaive<<<gridDim, blockDim>>>(d_A, d_B, d_C, N);
+	//}
+	//cudaDeviceSynchronize();
+//      checkCudaError(cudaGetLastError(), "Kernel launch");
        	//checkCudaError(cudaDeviceSynchronize(), "Device synchronize");
 
 }
 
 void runDevSync(){
-       	checkCudaError(cudaDeviceSynchronize(), "Device synchronize");
+	cudaDeviceSynchronize();
+	//       	checkCudaError(cudaDeviceSynchronize(), "Device synchronize");
 }
 
 void setGPUDevices(int device_id){
@@ -68,8 +69,8 @@ void setGPUDevices(int device_id){
 }
 
 // Allocate device memory
-//void allocGPUMemory(double** d_Mem, size_t bytes){
-void allocGPUMemory(double*& d_Mem, size_t bytes){
+//void allocGPUMemory(float** d_Mem, size_t bytes){
+void allocGPUMemory(float*& d_Mem, size_t bytes){
 	//checkCudaError(cudaMalloc(&d_Mem, bytes), "Allocating d_Mem with cudaMalloc"); ???
 	checkCudaError(cudaMallocManaged(&d_Mem, bytes), "Allocating d_Mem with cudaMallocManaged");
 }
@@ -114,12 +115,12 @@ void allocAllGPUs(){
 }
 
 // Copy data to device
-void copyDataToGPU(double* d_Mem, double* h_Mem, size_t bytes){
+void copyDataToGPU(float* d_Mem, float* h_Mem, size_t bytes){
     checkCudaError(cudaMemcpy(d_Mem, h_Mem, bytes, cudaMemcpyHostToDevice), "Copying h_Mem to d_Mem");
 //    cudaGetLastError();
 }
 
-void copyDataToHost(double* h_Mem, double* d_Mem, size_t bytes){
+void copyDataToHost(float* h_Mem, float* d_Mem, size_t bytes){
     checkCudaError(cudaMemcpy(h_Mem, d_Mem, bytes, cudaMemcpyDeviceToHost), "Copying d_Mem to h_Mem");
 }
 
@@ -131,11 +132,15 @@ void initDimensions(int block_size, int matrix_size){
 }
 
 //Cleanup
-void cleanGPUMemory(double*& d_Mem){
+void cleanGPUMemory(float*& d_Mem){
 	if(d_Mem)
        checkCudaError(cudaFree(d_Mem), "Cleanup of d_Mem");
 }
 
+void resetGPU()
+{
+	cudaDeviceReset();
+}
 /*void getDevInfo(){
 	getDeviceInformation();
 }

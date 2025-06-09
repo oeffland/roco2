@@ -119,7 +119,11 @@ target_sources(roco2_core PRIVATE src/gpu_matmul.cu)
 set_target_properties(roco2_core PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_target_properties(roco2_core PROPERTIES CUDA_ARCHITECTURES "90") 	# for Capella Hopper (H100)
 
-target_link_libraries(roco2_core INTERFACE CUDA::cudart)
+target_link_directories(roco2_core PRIVATE /software/genoa/r24.04/CUDA/12.4.0/lib64)
+target_link_libraries(roco2_core PRIVATE CUDA::cudart)
+
+#target_link_libraries(roco2_core INTERFACE CUDA::cudart) # worked with input error
+
 #set_source_files_properties(include/roco2/kernels/gpu_matmul.cu PROPERTIES LANGUAGE CUDA)
 
 
