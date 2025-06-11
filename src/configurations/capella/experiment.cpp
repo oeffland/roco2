@@ -60,7 +60,7 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 
     // ------ EDIT GENERIC SETTINGS BELOW THIS LINE ------
 
-auto experiment_duration = std::chrono::seconds(10);
+auto experiment_duration = std::chrono::seconds(2);
 //    auto experiment_duration = std::chrono::milliseconds(500);
 
     auto freq_list = std::vector<unsigned>{ 2601, 1400 };
@@ -120,7 +120,7 @@ auto experiment_duration = std::chrono::seconds(10);
                // experiment(addpd, on);
                // experiment(mulpd, on);
                // experiment(squareroot, on);
-                experiment(mm, on);
+               // experiment(mm, on);
 //               experiment(fs, on);
                 experiment(gpu_mm, on);
 //            }

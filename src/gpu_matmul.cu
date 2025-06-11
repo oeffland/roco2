@@ -64,7 +64,8 @@ void setGPUDevices(int device_id){
 //    checkCudaError(cudaGetDeviceCount(&numDevices), "getDeviceCount");
 //	std::cerr << "Device id: " << device_id << " of " << numDevices << "devices." << std::endl;
 //    int device = numDevices;
-    checkCudaError(cudaSetDevice(device_id), "set Deviceid");
+//    checkCudaError(cudaSetDevice(device_id), "set Deviceid");
+        cudaSetDevice(device_id);
 	std::cerr << "Device id: " << device_id << std::endl;
 }
 
@@ -76,42 +77,6 @@ void allocGPUMemory(float*& d_Mem, size_t bytes){
 }
 
 void allocAllGPUs(){
-/*	std::cerr << "alloc Device Memory" << std::endl;
-
-    	int numDevices;
-	checkCudaError(cudaGetDeviceCount(&numDevices), "getDeviceCount");
-	int device_id=0;
-	std::cerr << "Device id: " << device_id << " of " << numDevices << "devices." << std::endl;
-
-   for(i=0;i<numDevices;i++){
-	
-	checkCudaError(cudaSetDevice(device_id), "set Deviceid");
-    allocGPUMemory(d_A, matrix_size);
-    allocGPUMemory(d_B, matrix_size);
-    allocGPUMemory(d_C, matrix_size);
-   }
-  std::cerr << "synchronizing device" << std::endl;
- runDevSync();
-
-
-//  std::cerr << "trying to init matrices with size:" << matrix_size << std::endl;
-    // Initialize memory
-  for( int row = 0; row < N; ++row )
-    for( int col = 0; col < N; ++col )
-    {
-//      std::cerr << "init mem: " << row*N+col << " with: " << row << " " <<col+2 << std::endl;
-      d_A[row*N + col] = row;
-//      std::cerr << "a" << std::endl;
-      d_B[row*N + col] = col+2;
-//      std::cerr << "b" << std::endl;
-      d_C[row*N + col] = 0;
-//      std::cerr << "c" << std::endl;
-      
-    }
-  std::cerr << "matrices initialized" << std::endl;
-
-    checkCudaError(cudaMallocManaged(&d_Mem, bytes), "Allocating d_Mem");
-*/
 }
 
 // Copy data to device

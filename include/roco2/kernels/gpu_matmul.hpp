@@ -36,7 +36,12 @@ namespace kernels
 
         std::size_t loops = 0;
         int tid = omp_get_thread_num();
+	int t_num = omp_get_num_threads();
+	int t_num_max = omp_get_max_threads();
 
+	int thread_counter=0;
+	int device_counter=1;
+	int device_count=4;
 	public: gpu_matmul()
         {
 //        int tid_ctor = omp_get_thread_num();
@@ -46,7 +51,8 @@ namespace kernels
 
 
             int cpu_id = omp_get_thread_num();
-            int device_id = 1;
+	//    std::cerr << "t_id=" << t_id << " t_num=" << t_num << " t_num_max" << t_num_max << std::endl;
+            int device_id = 0;
             setGPUDevices(device_id);
 
             int matrix_size = N * N * sizeof(float);
@@ -89,7 +95,11 @@ namespace kernels
 */
 	#pragma omp master
 	{
-	    resetGPU();
+	    for (int i = 0; i < device_count; ++i) {
+      		setGPUDevices(i);
+		runDevSync();
+	    	resetGPU();
+    	    }
 	    std::cerr << " Device reset." << std::endl;
 	}
 	}
@@ -108,34 +118,79 @@ namespace kernels
 
 	 
 
+//	std::cerr << "t_id=" << t_id << " t_num=" << t_num << " t_num_max" << t_num_max << std::endl;
+//#pragma omp single nowait
+//if (tid == 0 || tid == 14)
 #pragma omp master
-    {
-//	std::cerr << "PRAGMA tid: " << tid << std::endl;
-    std::cerr << "synchronizing device" << std::endl;
+{
+	//std::cerr << "t_id=" << tid << " t_num=" << t_num << " t_num_max" << t_num_max << std::endl;
+//if (tid == 0 || tid == 14 || tid == 28 || tid == 42)
+//	{
 
-    runDevSync();
+	std::cerr << "t_id=" << tid << " survived." << std::endl;
+//	std::cerr << "PRAGMA tid: " << tid << std::endl;
+//    std::cerr << "synchronizing device" << std::endl;
+
+    if(thread_counter<3){
+    std::cerr << "A" << thread_counter << std::endl;
+	setGPUDevices(0);
+	device_counter=1;
+
+    } else if(thread_counter<8) {
+    std::cerr << "B" << thread_counter << std::endl;
+	setGPUDevices(1);
+	device_counter=2;
+    } else if(thread_counter<17) {
+    std::cerr << "C" << thread_counter << std::endl;
+	setGPUDevices(2);
+	device_counter=3;
+    } else if(thread_counter<20) {
+    std::cerr << "D" << thread_counter << std::endl;
+	setGPUDevices(3);
+	device_counter=4;
+    } else {
+    std::cerr << "E" << thread_counter << std::endl;
+//    	device_counter=4;
+	setGPUDevices(0);
+    }
+
+
+//      setGPUDevices(tid%13);
+      runDevSync();	//works
+
 
     std::cerr << "run GPU Matrix with gridsize: " << grid_size << " blocksize: "<< block_size << std::endl;
-
+    std::cerr << "thread_counter=" << thread_counter << std::endl;
+   
     do
             {
+//		for (int k=0; k<device_counter; k++){
+//			setGPUDevices(k);
 		for (int i = 0; i < 1000; i++)
 		{
+            	    //for(int j = 0; j < 2; j++){
+		    //setGPUDevices(j);
 		    runGPUMatrix(d_A, d_B, d_C, N, grid_size, block_size);
+		    //}
 		}
+		
+//		}
 		runDevSync();
                 loops++;
             } while (std::chrono::high_resolution_clock::now() < until);
 
 	    roco2::metrics::utility::instance().write(loops);
 	    std::cerr << "GPU Matrix successfully run. Loop counter:" << loops << std::endl;
-
+		
 	    loops = 0;
-     }
+	    thread_counter++;
+     } //else{
      
+	    std::cerr << "tid=" << tid << " going to sleep" << std::endl;
 	    std::this_thread::sleep_until(until);
-     }
-    };
+	//}
+     } //run_kernel
+    }; //gpu_matmul
 } // namespace kernels
 } // namespace roco2
 
