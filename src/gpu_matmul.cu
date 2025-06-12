@@ -54,6 +54,24 @@ void runGPUMatrix(const float* d_A, const float* d_B, float* d_C, int N, dim3 gr
 
 }
 
+void launchKernelStream(const std::vector<int>& devices, std::vector<cudaStream_t>& streams, int grid_size, int block_size, const float* d_A, const float* d_B, float* d_C, int N) {
+    int numDevices = devices.size();
+    // Ensure streams vector has the correct size
+    if (streams.size() != numDevices) {
+        streams.resize(numDevices);
+    }
+
+    for (int i = 0; i < numDevices; ++i) {
+        cudaSetDevice(devices[i]);
+        // Create stream if not already created
+        if (streams[i] == nullptr) {
+            cudaStreamCreate(&streams[i]);
+        }
+        // Launch kernel asynchronously on each device
+        matrixMulNaive<<<dim3(grid_size), dim3(block_size), 0, streams[i]>>>(d_A, d_B, d_C, N);
+    }
+}
+
 void runDevSync(){
 	cudaDeviceSynchronize();
 	//       	checkCudaError(cudaDeviceSynchronize(), "Device synchronize");
@@ -74,6 +92,22 @@ void setGPUDevices(int device_id){
 void allocGPUMemory(float*& d_Mem, size_t bytes){
 	//checkCudaError(cudaMalloc(&d_Mem, bytes), "Allocating d_Mem with cudaMalloc"); ???
 	checkCudaError(cudaMallocManaged(&d_Mem, bytes), "Allocating d_Mem with cudaMallocManaged");
+}
+
+void prefetchGPUMemory(float* d_Mem, size_t bytes, int deviceId){
+	cudaMemPrefetchAsync(d_Mem, bytes, deviceId);
+}
+
+void createStream(cudaStream_t* stream) {
+	cudaStreamCreate(stream);
+}
+
+void syncStream(cudaStream_t stream){
+	cudaStreamSynchronize(stream);
+}
+
+void destroyStream(cudaStream_t stream) {
+	cudaStreamDestroy(stream);
 }
 
 void allocAllGPUs(){

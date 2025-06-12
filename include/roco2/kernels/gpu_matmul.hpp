@@ -7,9 +7,11 @@
 
 #include <chrono>
 
+#include <vector>
 #include <cuda_runtime.h>
 
 void allocGPUMemory(float*& d_Mem, size_t bytes);
+void prefetchGPUMemory(float* d_Mem, size_t bytes, int deviceId);
 void copyDataToGPU(float* d_Mem, float* h_Mem, size_t bytes);
 void copyDataToHost(float* h_Mem, float* d_Mem, size_t bytes);
 void initDimensions(int block_size, int matrix_size);
@@ -17,6 +19,10 @@ void cleanGPUMemory(float*& d_Mem);
 void runGPUMatrix(const float* d_A, const float* d_B, float* d_C, int N, dim3 gridDim, dim3 blockDim);
 void runDevSync();
 void setGPUDevices(int device_id);
+void createStream(cudaStream_t* stream);
+void syncStream(cudaStream_t stream);
+void destroyStream(cudaStream_t stream);
+void launchKernelStream(const std::vector<int>& devices, std::vector<cudaStream_t>& streams, int grid_size, int block_size, const float* d_A, const float* d_B, float* d_C, int N);
 void allocAllGPUs();
 void resetGPU();
 
@@ -29,6 +35,7 @@ namespace kernels
     class gpu_matmul : public base_kernel
     {    
 	float *d_A, *d_B, *d_C;
+	cudaStream_t stream1, stream2, stream3, stream4;
         
 	const int N = 16384; // Matrix size 56816 for 14GB
         int block_size = 256;
@@ -42,6 +49,11 @@ namespace kernels
 	int thread_counter=0;
 	int device_counter=1;
 	int device_count=4;
+	size_t NUM_DEVICES = 4;
+    	std::vector<int> devices = {0, 1, 2, 3}; // Specify your device IDs
+    	std::vector<cudaStream_t> streams;
+    	//std::vector<cudaStream_t> streams(NUM_DEVICES, 0);
+
 	public: gpu_matmul()
         {
 //        int tid_ctor = omp_get_thread_num();
@@ -63,6 +75,15 @@ namespace kernels
             allocGPUMemory(d_B, matrix_size);
             allocGPUMemory(d_C, matrix_size);
 
+	    prefetchGPUMemory(d_A, matrix_size, device_id);
+	    prefetchGPUMemory(d_B, matrix_size, device_id);
+	    prefetchGPUMemory(d_C, matrix_size, device_id);
+
+	    createStream(&stream1);
+	    createStream(&stream2);
+	    createStream(&stream3);
+	    createStream(&stream4);
+
             for (int row = 0; row < N; ++row)
             {
                 for (int col = 0; col < N; ++col)
@@ -73,7 +94,21 @@ namespace kernels
                 }
             }
 
-            runDevSync();
+            streams.resize(NUM_DEVICES, 0);
+	
+//	if (err != cudaSuccess) {
+    	    // handle error
+//	     std::cerr << "adding stream to vector streams failed" << std::endl;
+//	} else {
+	    streams.push_back(stream1);
+	    streams.push_back(stream2);
+	    streams.push_back(stream3);
+	    streams.push_back(stream4);
+//	}
+
+
+
+            runDevSync(); //works
 	    }
         }
 
@@ -95,6 +130,11 @@ namespace kernels
 */
 	#pragma omp master
 	{
+	    destroyStream(stream1);
+	    destroyStream(stream2);
+	    destroyStream(stream3);
+	    destroyStream(stream4);
+
 	    for (int i = 0; i < device_count; ++i) {
       		setGPUDevices(i);
 		runDevSync();
@@ -127,31 +167,39 @@ namespace kernels
 //if (tid == 0 || tid == 14 || tid == 28 || tid == 42)
 //	{
 
-	std::cerr << "t_id=" << tid << " survived." << std::endl;
+//	std::cerr << "t_id=" << tid << " survived." << std::endl;
 //	std::cerr << "PRAGMA tid: " << tid << std::endl;
 //    std::cerr << "synchronizing device" << std::endl;
 
     if(thread_counter<3){
     std::cerr << "A" << thread_counter << std::endl;
-	setGPUDevices(0);
-	device_counter=1;
-
+//	setGPUDevices(0);
+	NUM_DEVICES=1;
+    	devices = {0};
     } else if(thread_counter<8) {
     std::cerr << "B" << thread_counter << std::endl;
-	setGPUDevices(1);
-	device_counter=2;
-    } else if(thread_counter<17) {
+//	setGPUDevices(1);
+	NUM_DEVICES=2;
+    	devices = {0,1};
+    } else if(thread_counter<12) {
     std::cerr << "C" << thread_counter << std::endl;
-	setGPUDevices(2);
-	device_counter=3;
-    } else if(thread_counter<20) {
+//	setGPUDevices(2);
+	NUM_DEVICES=3;
+    	devices = {0,1,2};
+//	device_counter=3;
+    } else if(thread_counter<16) {
     std::cerr << "D" << thread_counter << std::endl;
-	setGPUDevices(3);
-	device_counter=4;
+//	setGPUDevices(3);
+	//device_counter=2;
+	NUM_DEVICES=4;
+    	devices = {0,1,2,3};
+	//device_counter=4;
     } else {
     std::cerr << "E" << thread_counter << std::endl;
 //    	device_counter=4;
-	setGPUDevices(0);
+//	setGPUDevices(0);
+	NUM_DEVICES=4;
+    	devices = {0,1,2,3};
     }
 
 
@@ -160,21 +208,16 @@ namespace kernels
 
 
     std::cerr << "run GPU Matrix with gridsize: " << grid_size << " blocksize: "<< block_size << std::endl;
-    std::cerr << "thread_counter=" << thread_counter << std::endl;
+//    std::cerr << "thread_counter=" << thread_counter << std::endl;
    
     do
             {
-//		for (int k=0; k<device_counter; k++){
-//			setGPUDevices(k);
-		for (int i = 0; i < 1000; i++)
+		/*for (int i = 0; i < 1000; i++)
 		{
-            	    //for(int j = 0; j < 2; j++){
-		    //setGPUDevices(j);
 		    runGPUMatrix(d_A, d_B, d_C, N, grid_size, block_size);
-		    //}
-		}
+		}*/
+		launchKernelStream(devices, streams, grid_size, block_size, d_A, d_B, d_C, N);
 		
-//		}
 		runDevSync();
                 loops++;
             } while (std::chrono::high_resolution_clock::now() < until);
@@ -184,9 +227,14 @@ namespace kernels
 		
 	    loops = 0;
 	    thread_counter++;
+
+	    syncStream(stream1);
+	    syncStream(stream2);
+	    syncStream(stream3);
+	    syncStream(stream4);
      } //else{
      
-	    std::cerr << "tid=" << tid << " going to sleep" << std::endl;
+//	    std::cerr << "tid=" << tid << " going to sleep" << std::endl;
 	    std::this_thread::sleep_until(until);
 	//}
      } //run_kernel
