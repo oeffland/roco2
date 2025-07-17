@@ -6,57 +6,60 @@
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 
-/*#if __has_include(<mkl_cblas.h>)
-#include <mkl_cblas.h>
-#define USE_MKL
-#elif __has_include(<cblas.h>)
-#include <cblas.h>
-#define USE_BLAS
-#elif __has_include(<acml.h>)
-#include <acml.h>
-#define USE_ACML
-#endif
-*/
-
 #include <chrono>
 
-//#define ROW_TILE_WIDTH 32
-//#define COL_TILE_WIDTH 32
 
-//N = matrix_size
-__global__ void matrixMulNaive(const float* A, const float* B, float* C, int N) {
+/*__global__ void trig_muladd(double *result, int iterations, volatile bool *cudaStopFlag){
+    while (true) {
+        if (atomicAdd((int*)cudaStopFlag, 0) != 0) {
+            return;
+        }
+        double sum = 0.0;
+
+    for (int i = 0; i < 1000; ++i) {
+        sum += sin(i) * tan(i) + cos(i);
+    }
+    result[idx] = sum;
+        
+    }
+*/
+
+__global__ void matrixMulNaive(const float* A, const float* B, float* C, int N, volatile bool* cudaStopFlag) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    for (int i=0; i<100; i++){
-    	if (row < N && col < N) {
-        	float sum = 0.0f;
-        	for (int k = 0; k < N; ++k) {
+    while (true) {
+        if(atomicAdd((int*) cudaStopFlag, 0) != 0){
+            return; //exit kernel
+        }
+        for (int i=0; i<100; i++) {
+    	    if (row < N && col < N) {
+        	    double sum = 0.0;
+        	    for (int k = 0; k < N; ++k) {
             		sum += A[row * N + k] * B[k * N + col];
-        	}
-        	C[row * N + col] = sum;
-    	}
+        	    }
+        	    C[row * N + col] = sum;
+    	    }
+        }
     }
+
+}
+/*
+void runTrigKernel(double* result, int iterations, volatile bool *cudaStopFlag, dim3 gridDim, dim3 blockDim){
+    trig_muladd<<<gridDim,blockDim>>>(result, iterations);
+}*/
+
+void runGPUMatrix(const float* d_A, const float* d_B, float* d_C, volatile bool* cudaStopFlag, int N, dim3 gridDim, dim3 blockDim) {
+		matrixMulNaive<<<gridDim, blockDim>>>(d_A, d_B, d_C, N, cudaStopFlag);
 }
 
-void checkCudaError(cudaError_t err, const char* msg) {
-    if (err != cudaSuccess) {
-        std::cerr << "Error: " << msg << " (" << cudaGetErrorString(err) << ")" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-}
 
-void runGPUMatrix(const float* d_A, const float* d_B, float* d_C, int N, dim3 gridDim, dim3 blockDim) {
-	//for (int i = 0; i < 100; i++){
+/*void runGPUMatrix(const float* d_A, const float* d_B, float* d_C, int N, dim3 gridDim, dim3 blockDim) {
 		matrixMulNaive<<<gridDim, blockDim>>>(d_A, d_B, d_C, N);
-	//}
-	//cudaDeviceSynchronize();
-//      checkCudaError(cudaGetLastError(), "Kernel launch");
-       	//checkCudaError(cudaDeviceSynchronize(), "Device synchronize");
-
 }
+*/
 
-void launchKernelStream(const std::vector<int>& devices, std::vector<cudaStream_t>& streams, int grid_size, int block_size, const float* d_A, const float* d_B, float* d_C, int N) {
+void launchKernelStream(const std::vector<int>& devices, std::vector<cudaStream_t>& streams, int grid_size, int block_size, const float* d_A, const float* d_B, float* d_C, int N, volatile bool* cudaStopFlag) {
     int numDevices = devices.size();
     // Ensure streams vector has the correct size
     if (streams.size() != numDevices) {
@@ -71,31 +74,32 @@ void launchKernelStream(const std::vector<int>& devices, std::vector<cudaStream_
 //        }
         // Launch kernel asynchronously on each device
 	//for (int j = 0; j < streams.size(); j++) {
-        	matrixMulNaive<<<dim3(grid_size), dim3(block_size), 0, streams[i]>>>(d_A, d_B, d_C, N);
+        	matrixMulNaive<<<dim3(grid_size), dim3(block_size), 0, streams[i]>>>(d_A, d_B, d_C, N, cudaStopFlag);
 	//}
     }
 }
 
 void runDevSync(){
 	cudaDeviceSynchronize();
-	//       	checkCudaError(cudaDeviceSynchronize(), "Device synchronize");
 }
 
 void setGPUDevices(int device_id){
-//    int numDevices;
-//    checkCudaError(cudaGetDeviceCount(&numDevices), "getDeviceCount");
-//	std::cerr << "Device id: " << device_id << " of " << numDevices << "devices." << std::endl;
-//    int device = numDevices;
-//    checkCudaError(cudaSetDevice(device_id), "set Deviceid");
-        cudaSetDevice(device_id);
+    cudaSetDevice(device_id);
 	std::cerr << "Device id: " << device_id << std::endl;
 }
 
 // Allocate device memory
-//void allocGPUMemory(float** d_Mem, size_t bytes){
+/*template <typename T>
+void allocGPUMemory(T*& d_Mem, size_t count){
+	cudaMallocManaged(&d_Mem, count * sizeof(T));
+}
+*/
 void allocGPUMemory(float*& d_Mem, size_t bytes){
-	//checkCudaError(cudaMalloc(&d_Mem, bytes), "Allocating d_Mem with cudaMalloc"); ???
-	checkCudaError(cudaMallocManaged(&d_Mem, bytes), "Allocating d_Mem with cudaMallocManaged");
+	cudaMallocManaged(&d_Mem, bytes);
+}
+
+void allocGPUMemory(volatile bool*& d_Mem, size_t bytes){
+    cudaMallocManaged(&d_Mem, bytes);
 }
 
 void prefetchGPUMemory(float* d_Mem, size_t bytes, int deviceId){
@@ -119,12 +123,11 @@ void allocAllGPUs(){
 
 // Copy data to device
 void copyDataToGPU(float* d_Mem, float* h_Mem, size_t bytes){
-    checkCudaError(cudaMemcpy(d_Mem, h_Mem, bytes, cudaMemcpyHostToDevice), "Copying h_Mem to d_Mem");
-//    cudaGetLastError();
+    cudaMemcpy(d_Mem, h_Mem, bytes, cudaMemcpyHostToDevice);
 }
 
 void copyDataToHost(float* h_Mem, float* d_Mem, size_t bytes){
-    checkCudaError(cudaMemcpy(h_Mem, d_Mem, bytes, cudaMemcpyDeviceToHost), "Copying d_Mem to h_Mem");
+    cudaMemcpy(h_Mem, d_Mem, bytes, cudaMemcpyDeviceToHost);
 }
 
 // Launch parameters
@@ -137,14 +140,10 @@ void initDimensions(int block_size, int matrix_size){
 //Cleanup
 void cleanGPUMemory(float*& d_Mem){
 	if(d_Mem)
-       checkCudaError(cudaFree(d_Mem), "Cleanup of d_Mem");
+       cudaFree(d_Mem);
 }
 
 void resetGPU()
 {
 	cudaDeviceReset();
 }
-/*void getDevInfo(){
-	getDeviceInformation();
-}
-*/
