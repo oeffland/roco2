@@ -46,7 +46,7 @@ namespace kernels
 	int t_num = omp_get_num_threads();
 	int t_num_max = omp_get_max_threads();
 
-	int thread_counter=0;
+	int thread_counter=1;
 	int device_counter=1;
 	int device_count=4;
 	size_t NUM_DEVICES = 4;
@@ -79,11 +79,6 @@ namespace kernels
 	    prefetchGPUMemory(d_B, matrix_size, device_id);
 	    prefetchGPUMemory(d_C, matrix_size, device_id);
 
-	    createStream(&stream1);
-	    createStream(&stream2);
-	    createStream(&stream3);
-	    createStream(&stream4);
-
             for (int row = 0; row < N; ++row)
             {
                 for (int col = 0; col < N; ++col)
@@ -94,7 +89,16 @@ namespace kernels
                 }
             }
 
-            streams.resize(NUM_DEVICES, 0);
+            setGPUDevices(0);
+ 	    createStream(&stream1);
+            setGPUDevices(1);
+	    createStream(&stream2);
+            setGPUDevices(2);
+	    createStream(&stream3);
+            setGPUDevices(3);
+	    createStream(&stream4);
+
+           streams.resize(NUM_DEVICES, 0);
 	
 //	if (err != cudaSuccess) {
     	    // handle error
@@ -130,9 +134,13 @@ namespace kernels
 */
 	#pragma omp master
 	{
+            setGPUDevices(0);
 	    destroyStream(stream1);
+            setGPUDevices(1);
 	    destroyStream(stream2);
+            setGPUDevices(2);
 	    destroyStream(stream3);
+            setGPUDevices(3);
 	    destroyStream(stream4);
 
 	    for (int i = 0; i < device_count; ++i) {
@@ -171,23 +179,23 @@ namespace kernels
 //	std::cerr << "PRAGMA tid: " << tid << std::endl;
 //    std::cerr << "synchronizing device" << std::endl;
 
-    if(thread_counter<3){
+    if(thread_counter<=5){
     std::cerr << "A" << thread_counter << std::endl;
 //	setGPUDevices(0);
 	NUM_DEVICES=1;
     	devices = {0};
-    } else if(thread_counter<8) {
+    } else if(thread_counter<=9) {
     std::cerr << "B" << thread_counter << std::endl;
 //	setGPUDevices(1);
 	NUM_DEVICES=2;
     	devices = {0,1};
-    } else if(thread_counter<12) {
+    } else if(thread_counter<=13) {
     std::cerr << "C" << thread_counter << std::endl;
 //	setGPUDevices(2);
 	NUM_DEVICES=3;
     	devices = {0,1,2};
 //	device_counter=3;
-    } else if(thread_counter<16) {
+    } else if(thread_counter<=17) {
     std::cerr << "D" << thread_counter << std::endl;
 //	setGPUDevices(3);
 	//device_counter=2;
@@ -204,7 +212,7 @@ namespace kernels
 
 
 //      setGPUDevices(tid%13);
-      runDevSync();	//works
+      //runDevSync();	//works
 
 
     std::cerr << "run GPU Matrix with gridsize: " << grid_size << " blocksize: "<< block_size << std::endl;

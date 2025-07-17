@@ -28,12 +28,14 @@ __global__ void matrixMulNaive(const float* A, const float* B, float* C, int N) 
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (row < N && col < N) {
-        float sum = 0.0f;
-        for (int k = 0; k < N; ++k) {
-            sum += A[row * N + k] * B[k * N + col];
-        }
-        C[row * N + col] = sum;
+    for (int i=0; i<100; i++){
+    	if (row < N && col < N) {
+        	float sum = 0.0f;
+        	for (int k = 0; k < N; ++k) {
+            		sum += A[row * N + k] * B[k * N + col];
+        	}
+        	C[row * N + col] = sum;
+    	}
     }
 }
 
@@ -63,12 +65,14 @@ void launchKernelStream(const std::vector<int>& devices, std::vector<cudaStream_
 
     for (int i = 0; i < numDevices; ++i) {
         cudaSetDevice(devices[i]);
-        // Create stream if not already created
-        if (streams[i] == nullptr) {
-            cudaStreamCreate(&streams[i]);
-        }
+//        // Create stream if not already created
+//        if (streams[i] == nullptr) {
+//            cudaStreamCreate(&streams[i]);
+//        }
         // Launch kernel asynchronously on each device
-        matrixMulNaive<<<dim3(grid_size), dim3(block_size), 0, streams[i]>>>(d_A, d_B, d_C, N);
+	//for (int j = 0; j < streams.size(); j++) {
+        	matrixMulNaive<<<dim3(grid_size), dim3(block_size), 0, streams[i]>>>(d_A, d_B, d_C, N);
+	//}
     }
 }
 

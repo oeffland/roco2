@@ -27,6 +27,7 @@
 #include <roco2/kernels/sinus.hpp>
 #include <roco2/kernels/sqrt.hpp>
 #include <roco2/kernels/gpu_matmul.hpp>
+//#include <roco2/kernels/gpu_trigo.hpp>
 
 #include <roco2/task/experiment_task.hpp>
 #include <roco2/task/lambda_task.hpp>
@@ -52,6 +53,7 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
     roco2::kernels::mulpd mulpd;
     roco2::kernels::addpd addpd;
     roco2::kernels::gpu_matmul gpu_mm;
+//    roco2::kernels::gpu_trigo gpu_trig;
 
 //    roco2::cpu::frequency freqctl;
 //    roco2::cpu::ddcm ddcm;
@@ -60,7 +62,7 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 
     // ------ EDIT GENERIC SETTINGS BELOW THIS LINE ------
 
-auto experiment_duration = std::chrono::seconds(2);
+auto experiment_duration = std::chrono::seconds(60);
 //    auto experiment_duration = std::chrono::milliseconds(500);
 
     auto freq_list = std::vector<unsigned>{ 2601, 1400 };
@@ -111,18 +113,19 @@ auto experiment_duration = std::chrono::seconds(2);
 //            {
 //                setting([&ddcm, cycles]() { ddcm.change(cycles); });
 
-               // experiment(bw, on);
-               // experiment(cp, on);
+//                experiment(bw, on);
+//                experiment(cp, on);
 //                experiment(sinus, on);
 //                experiment(mem_rd, on);
 //                experiment(mem_cpy, on);
 //                experiment(mem_wrt, on);
-               // experiment(addpd, on);
-               // experiment(mulpd, on);
-               // experiment(squareroot, on);
-               // experiment(mm, on);
+//               experiment(addpd, on);
+//               experiment(mulpd, on);
+//                experiment(squareroot, on);
+                //experiment(mm, on);
 //               experiment(fs, on);
                 experiment(gpu_mm, on);
+//		experiment(gpu_trig, on)
 //            }
         }
 //#pragma omp barrier //TEST
