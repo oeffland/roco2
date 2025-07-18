@@ -40,9 +40,13 @@ namespace kernels
 {
     class gpu_matmul : public base_kernel
     {    
+    
+//std::cerr << "A" << std::endl;
 	float *d_A, *d_B, *d_C;
 	cudaStream_t stream1, stream2, stream3, stream4;
+//std::cerr << "B" << std::endl;
     volatile bool* cudaStopFlag;
+//std::cerr << "C" << std::endl;
         
 	const int N = 16384; // Matrix size 56816 for 14GB
         int block_size = 256;
@@ -61,22 +65,24 @@ namespace kernels
     	std::vector<cudaStream_t> streams;
     	//std::vector<cudaStream_t> streams(NUM_DEVICES, 0);
 
+//std::cerr << "D" << std::endl;
 	public: gpu_matmul()
         {
 //        int tid_ctor = omp_get_thread_num();
 	#pragma omp master
 	    {
+std::cerr << "E" << std::endl;
             size_t bytes = N * N * sizeof(float);
 
 
             int cpu_id = omp_get_thread_num();
-	//    std::cerr << "t_id=" << t_id << " t_num=" << t_num << " t_num_max" << t_num_max << std::endl;
+	//    std::err << "t_id=" << t_id << " t_num=" << t_num << " t_num_max" << t_num_max << std::endl;
             int device_id = 0;
             setGPUDevices(device_id);
 
             int matrix_size = N * N * sizeof(float);
             int matrix_count = N * N;            
-            *cudaStopFlag = false; 
+std::cerr << "F" << std::endl;
 
             std::cerr << "alloc Device Memory" << std::endl;
 
@@ -84,6 +90,10 @@ namespace kernels
             allocGPUMemory(d_B, matrix_size);
             allocGPUMemory(d_C, matrix_size);
             allocGPUMemory(cudaStopFlag, sizeof(volatile bool));
+            
+std::cerr << "G" << std::endl;
+        *cudaStopFlag = false; 
+std::cerr << "H" << std::endl;
 
 	    prefetchGPUMemory(d_A, matrix_size, device_id);
 	    prefetchGPUMemory(d_B, matrix_size, device_id);
@@ -226,11 +236,13 @@ namespace kernels
       //runDevSync();	//works
 
 
+        *cudaStopFlag = false;
     std::cerr << "run GPU Matrix with gridsize: " << grid_size << " blocksize: "<< block_size << std::endl;
 //    std::cerr << "thread_counter=" << thread_counter << std::endl;
 
-//        do
-//        {
+        do
+        {
+        *cudaStopFlag = false;
 		/*for (int i = 0; i < 1000; i++)
 		{
 		    runGPUMatrix(d_A, d_B, d_C, N, grid_size, block_size);
@@ -238,12 +250,11 @@ namespace kernels
 		    launchKernelStream(devices, streams, grid_size, block_size, d_A, d_B, d_C, N, cudaStopFlag);
             		
 //	    std::this_thread::sleep_until(until);
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         *cudaStopFlag = true;
-//        cudaMemcpy(d_stop, &host_stop, sizeof(bool), cudaMemcpyHostToDevice);
 		    runDevSync();
-//            loops++;
-//        } while (std::chrono::high_resolution_clock::now() < until);
+            loops++;
+        } while (std::chrono::high_resolution_clock::now() < until);
 
 	    roco2::metrics::utility::instance().write(loops);
 	    std::cerr << "GPU Matrix successfully run. Loop counter:" << loops << std::endl;
