@@ -47,6 +47,8 @@ namespace kernels
                     cudaStream_t stream;
                     cudaStreamCreate(&stream);
 
+                    std::cout << "schedule_task from setup_streams for device: " << gpu_id << std::endl;
+
                     schedule_task(gpu_id, stream);
 
                     streams_.push_back(stream);
@@ -58,9 +60,13 @@ namespace kernels
 
         void progress()
         {
+            #ifdef HAS_SCOREP
+                SCOREP_USER_REGION("progress", SCOREP_USER_REGION_TYPE_FUNCTION)
+            #endif
+
             for (int gpu_id = 0; (unsigned)gpu_id < streams_.size(); gpu_id++)
             {
-                auto stream = streams_[gpu_id];
+                auto& stream = streams_[gpu_id];
 
                 if (stream == nullptr)
                     continue;
@@ -69,6 +75,7 @@ namespace kernels
 
                 if (cudaStreamQuery(stream) == cudaSuccess)
                 {
+                    std::cout << "schedule_task from progress for device: " << gpu_id << std::endl;
                     schedule_task(gpu_id, stream);
                 }
             }

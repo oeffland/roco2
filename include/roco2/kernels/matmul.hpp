@@ -58,6 +58,8 @@ namespace kernels
 #endif
 
                 loops++;
+//                std::cout << "schedule_task from matmul "  << std::endl;
+
                 progress();
             } while (std::chrono::high_resolution_clock::now() < until);
 

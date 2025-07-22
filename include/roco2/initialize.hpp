@@ -75,9 +75,9 @@ public:
         if (cpu::info::current_cpu() !=
             cpu::mapping::instance().cpu_for_thread(cpu::info::current_thread()))
         {
-            raise("Thread ", cpu::info::current_thread(),
-                  " is on wrong cpu: ", cpu::info::current_cpu(), " expected: ",
-                  cpu::mapping::instance().cpu_for_thread(cpu::info::current_thread()));
+            log::warn() << "Thread " << cpu::info::current_thread() <<
+                  " is on wrong cpu: " << cpu::info::current_cpu() << " expected: " <<
+                  cpu::mapping::instance().cpu_for_thread(cpu::info::current_thread());
         }
 
         thread_local_memory();

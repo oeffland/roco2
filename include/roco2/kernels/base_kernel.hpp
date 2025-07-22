@@ -25,8 +25,12 @@ namespace kernels
         using experiment_tag = std::size_t;
 
         void run(roco2::chrono::time_point until, roco2::experiments::cpu_sets::cpu_set on,
-                 std::function<void()> progress)
+                 std::function<void()> progress = [](){})
         {
+            if (progress){
+                std::cout << "progress function defined" << std::endl;
+            }
+            
             if (on.contains(roco2::cpu::info::current_thread()))
             {
                 this->run_kernel(until, progress);

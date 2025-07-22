@@ -37,6 +37,7 @@ namespace experiments
                                                                            gpu_kernel.tag());
 
             gpu_kernel.setup_streams(on_gpus);
+            std::cout << "call progress from run(cpu,gpu)" << std::endl;
             cpu_kernel.run(starting_point, on_cpus, [&gpu_kernel]() { gpu_kernel.progress(); });
             gpu_kernel.stop();
         }
@@ -49,7 +50,11 @@ namespace experiments
             roco2::metrics::threads::instance().write(on_cpus.num_threads());
             roco2::metrics::metric_guard<roco2::metrics::experiment> guard(cpu_kernel.tag());
 
-            cpu_kernel.run(starting_point, on_cpus, [](){});
+
+            //cpu_kernel.run(starting_point, on_cpus, [](){});
+            std::cout << "call progress from run(cpu)" << std::endl;
+
+            cpu_kernel.run(starting_point, on_cpus);
         }
 
     private:

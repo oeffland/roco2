@@ -57,7 +57,7 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
 
     auto on_list = sub_block_pattern(4, 16);
 
-    auto on_gpu_list = std::vector<roco2::experiments::gpu_sets::gpu_set>{  {0}, };
+    auto on_gpu_list = std::vector<roco2::experiments::gpu_sets::gpu_set>{  {0}, {1}};
 
     // ------ EDIT GENERIC SETTINGS ABOVE THIS LINE ------
 
@@ -87,8 +87,8 @@ void run_experiments(roco2::chrono::time_point starting_point, bool eta_only)
     {
         for (const auto& on_gpu : on_gpu_list)
         {
-            plan.push_back(roco2::task::experiment_task(exp, mm, on));
-            plan.push_back(roco2::task::experiment_gpu_task(exp, idle, on, cuda_mm, on_gpu));
+            //plan.push_back(roco2::task::experiment_task(exp, mm, on));
+            //plan.push_back(roco2::task::experiment_gpu_task(exp, idle, on, cuda_mm, on_gpu));
             plan.push_back(roco2::task::experiment_gpu_task(exp, mm, on, cuda_mm, on_gpu));
         }
     }
